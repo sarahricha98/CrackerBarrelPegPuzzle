@@ -23,9 +23,9 @@ moves(12,13,14).
 
 %generator for moves and their opposites 
 step(Forward, Opposite):-
-    moves(F, O, T),
-    Forward     = [F, O, T],
-    Opposite = [T, O, F].
+    moves(Front, O, Back),
+    Forward     = [Front, O, Back],
+    Opposite = [Front, O, Back].
 
 %builds cells, 1 if full 0 if empty
 %returns as a pair a count k of the full ones and the cells 
@@ -44,20 +44,20 @@ assign(Index, List, NewValue, Value, Result):-
 % given the current occupancy of the cells 
 move(PegBoard, Move, AfterMove):-
     [Remaining | [CellConfig]] = PegBoard,
-    [F, O, T] = Move, RemainingAfterMove is Remaining-1,
+    [Front, O, Back] = Move, RemainingAfterMove is Remaining-1,
     (step(Move, _); step(_, Move)),
-    assign(F, CellConfig,     0, 1, NewCellConfig0),
+    assign(Front, CellConfig,     0, 1, NewCellConfig0),
     assign(O, NewCellConfig0, 0, 1, NewCellConfig1),
-    assign(T, NewCellConfig1, 1, 0, NewCellConfigFinal),
+    assign(Back, NewCellConfig1, 1, 0, NewCellConfigFinal),
     AfterMove = [RemainingAfterMove, NewCellConfigFinal].
 
 % generator that finds all possible solutions
 % given a cell configuration
 solve([1, _], []).
 solve(PegBoard, Moves):-
-    [Move | T] = Moves,
-    move(PegBoard, Move, Result),
-    solve(Result, T).
+    [Front | Back] = Moves,
+    move(PegBoard, Front, Result),
+    solve(Result, Back).
 
 % sets initial position with empty at i 
 % picks first solution
@@ -77,18 +77,18 @@ puzzle(I, Moves, InitalBoard):-
 
 write_to(_, []).
 write_to(ListOfPegs, Indices):-
-    [B | E] = Indices,
-    ((nth0(B, ListOfPegs, 0),write('. '));(nth0(B, ListOfPegs, 1),write('x '))),
-    write_to(ListOfPegs, E).
+    [Front | Back] = Indices,
+    ((nth0(Front, ListOfPegs, 0),write('. '));(nth0(B, ListOfPegs, 1),write('x '))),
+    write_to(ListOfPegs, Back).
 
 % shows the result by printing out successive states
 show(PegBoard):-once(show(PegBoard, [[4,0,0],[3,1,2],[2,3,5],[1,6,9],[0,10,14]])).
 show(PegBoard, Lines):-
     [_ | [CellList]] = PegBoard,
     [Lines | Remaining ] = Lines,
-    [T, A, B] = Lines,
-    tab(T),
-    numlist(A, B, Indices),
+    [Front, Mid, Back] = Lines,
+    tab(Front),
+    numlist(Mid, Back, Indices),
     write_to(CellList, Indices),
     nl,
     show(PegBoard, Remaining).
@@ -109,15 +109,15 @@ dont_show_replay(_, [], []).
 dont_show_replay(PegBoard, Moves, BoardList):-
     [Move | EndingMoves] = Moves,
     move(PegBoard, Move, Remaining),
-    [Remaining | BoardListTail] = BoardList,
-    dont_show_replay(Remaining, EndingMoves, PegBoardEndMove).
+    [Front | Back] = BoardList,
+    dont_show_replay(Front, EndingMoves, Back).
     
 
 printPegs([]).
 printPegs(List):-
-    [B | E] = List,
-    print(B),nl,
-    printPegs(E).
+    [Front | Back] = List,
+    print(Back),nl,
+    printPegs(Front).
 
 % prints out a terse view of solutions for each missing peg 
 terse():-
@@ -126,8 +126,8 @@ terse():-
         
 terse([]).
 terse(Indices):-
-    [B | E] = Indices,
-    puzzle(B, Moves, PegBoard),
+    [Front | Back] = Indices,
+    puzzle(Front, Moves, PegBoard),
     print(PegBoard),
     nl,
     printPegs(Moves),
@@ -136,7 +136,7 @@ terse(Indices):-
     print(Remaining),
     nl,
     nl,
-    terse(E).
+    terse(Back).
 
 % visualizes a solution for each first 5 positions
 % others look the same after 120 degrees rotations
@@ -146,10 +146,10 @@ go():-
 
 go([]).
 go(Indices):-
-    [B | E] = Indices,
+    [Front | Back] = Indices,
     write('=== '),write(B),write(' ==='),nl,
-    puzzle(B, Moves, Board),
+    puzzle(Front, Moves, Board),
     show(Board),
     nl,
     replay(Board, Moves),
-    go(E).
+    go(Back).
